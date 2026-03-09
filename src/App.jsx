@@ -238,6 +238,7 @@ Rispondi SOLO con questo JSON:
     } catch (err) {
       console.error(err);
       setPhase("error");
+      setLoadingMsg(err.message || "Errore sconosciuto");
     }
   };
 
@@ -319,11 +320,16 @@ Rispondi SOLO con questo JSON:
   // ── ERROR ─────────────────────────────────────────────────────────────────
   if (phase === "error") {
     return (
-      <div style={{ minHeight: "100vh", background: "#060810", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "monospace", gap: 16 }}>
+      <div style={{ minHeight: "100vh", background: "#060810", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "monospace", gap: 16, padding: 24 }}>
         <div style={{ color: "#FF6B6B", fontSize: 32 }}>⚠</div>
         <div style={{ color: "#fff", fontSize: 16 }}>Ticker non trovato o errore di rete</div>
+        {loadingMsg && (
+          <div style={{ color: "#FF6B6B", fontSize: 12, background: "rgba(255,107,107,0.1)", border: "1px solid rgba(255,107,107,0.3)", borderRadius: 8, padding: "10px 16px", maxWidth: 500, textAlign: "center", wordBreak: "break-all" }}>
+            {loadingMsg}
+          </div>
+        )}
         <div style={{ color: "#666", fontSize: 13 }}>Controlla il ticker e riprova</div>
-        <button onClick={() => { setPhase("home"); setTicker(""); }} style={{ marginTop: 16, padding: "12px 28px", background: "#00D4AA", border: "none", borderRadius: 10, color: "#060810", cursor: "pointer", fontWeight: 700 }}>
+        <button onClick={() => { setPhase("home"); setTicker(""); setLoadingMsg(""); }} style={{ marginTop: 16, padding: "12px 28px", background: "#00D4AA", border: "none", borderRadius: 10, color: "#060810", cursor: "pointer", fontWeight: 700 }}>
           ← Riprova
         </button>
       </div>
