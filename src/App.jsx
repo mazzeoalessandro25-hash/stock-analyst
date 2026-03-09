@@ -3,33 +3,47 @@ import { useState, useEffect, useRef } from "react";
 const ANTHROPIC_API = "/api/claude";
 
 // ── Utility ──────────────────────────────────────────────────────────────────
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
 const callClaude = async (systemPrompt, userPrompt) => {
   const res = await fetch(ANTHROPIC_API, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       model: "claude-sonnet-4-20250514",
-      max_tokens: 1000,
+      max_tokens: 4000,
       tools: [{ type: "web_search_20250305", name: "web_search" }],
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     }),
   });
   const data = await res.json();
-  if (data.error) throw new Error(data.error);
-  return data.content
+  if (data.error) throw new Error(JSON.stringify(data.error));
+  if (!data.content || !Array.isArray(data.content)) throw new Error("Risposta non valida dall'API");
+  const text = data.content
     .filter((b) => b.type === "text")
     .map((b) => b.text)
     .join("");
+  if (!text) throw new Error("Nessun testo nella risposta");
+  return text;
 };
 
 const parseJSON = (text) => {
   try {
-    const clean = text.replace(/```json|```/g, "").trim();
+    // Remove markdown code blocks
+    let clean = text.replace(/```json\s*/gi, "").replace(/```\s*/gi, "").trim();
+    // Find the outermost JSON object
     const start = clean.indexOf("{");
     const end = clean.lastIndexOf("}");
-    return JSON.parse(clean.slice(start, end + 1));
+    if (start === -1 || end === -1) return null;
+    clean = clean.slice(start, end + 1);
+    return JSON.parse(clean);
   } catch {
+    // Try to find any valid JSON object in the text
+    try {
+      const match = text.match(/\{[\s\S]*\}/);
+      if (match) return JSON.parse(match[0]);
+    } catch {}
     return null;
   }
 };
@@ -181,6 +195,7 @@ Restituisci SOLO questo JSON (valori numerici nella valuta locale ${tickerInfo.c
 
       // Step 2: News
       setLoadingMsg("Analisi notizie recenti");
+      await sleep(3000);
       const newsRaw = await callClaude(
         `Sei un analista finanziario esperto di mercati globali. Rispondi SOLO con un oggetto JSON valido, nessun testo extra.`,
         `Cerca le ultime 4 notizie rilevanti su ${financials.name || tickerInfo.base} (${tickerInfo.country}). Cerca in italiano e in inglese. Rispondi SOLO con questo JSON:
@@ -197,6 +212,7 @@ Restituisci SOLO questo JSON (valori numerici nella valuta locale ${tickerInfo.c
 
       // Step 3: Buffett + Lynch scores + price target
       setLoadingMsg("Calcolo rating Buffett & Lynch e price target");
+      await sleep(3000);
       const ratingsRaw = await callClaude(
         `Sei Warren Buffett e Peter Lynch. Rispondi SOLO con JSON valido, nessun testo extra.`,
         `Analizza ${tickerInfo.ticker} (${financials.name}, ${tickerInfo.country}) con questi dati: PE=${financials.pe}, ROE=${financials.roe}%, DebtEquity=${financials.debtEquity}, GrossMargin=${financials.grossMargin}%, RevenueGrowth=${financials.revenueGrowthYoY}%, PEG=${financials.peg}, OperatingMargin=${financials.operatingMargin}%, FCF=${financials.freeCashFlow}${tickerInfo.currency}, DividendYield=${financials.dividendYield}%.
@@ -238,7 +254,8 @@ Rispondi SOLO con questo JSON:
     } catch (err) {
       console.error(err);
       setPhase("error");
-      setLoadingMsg(err.message || "Errore sconosciuto");
+      const msg = typeof err.message === "object" ? JSON.stringify(err.message) : (err.message || "Errore sconosciuto");
+      setLoadingMsg(msg);
     }
   };
 
