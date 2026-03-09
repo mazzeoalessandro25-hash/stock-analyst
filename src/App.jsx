@@ -156,86 +156,33 @@ export default function StockAnalystPro() {
 
     try {
       // Step 1: Financial data
-      setLoadingMsg("Recupero dati finanziari e prezzo attuale");
+      setLoadingMsg("Recupero dati finanziari...");
       const financialsRaw = await callClaude(
-        `Sei un analista finanziario esperto di mercati globali inclusi Europa, Italia, Asia. Rispondi SOLO con un oggetto JSON valido, nessun testo extra, nessun markdown.`,
-        `Cerca i dati finanziari aggiornati di "${tickerInfo.base}" (ticker completo: ${tickerInfo.ticker}), quotata su ${tickerInfo.name} in ${tickerInfo.country}. La valuta è ${tickerInfo.currency}.
-Cerca con termini come "${tickerInfo.base} ${tickerInfo.country} azione dati finanziari" oppure "${tickerInfo.ticker} stock financials".
-Restituisci SOLO questo JSON (valori numerici nella valuta locale ${tickerInfo.currency}, usa null se non disponibile):
-{
-  "name": "nome completo azienda",
-  "sector": "settore in italiano",
-  "currency": "${tickerInfo.currency}",
-  "exchange": "${tickerInfo.name}",
-  "country": "${tickerInfo.country}",
-  "price": 0,
-  "priceChange1Y": 0,
-  "marketCap": "0B",
-  "pe": 0,
-  "forwardPE": 0,
-  "evEbitda": 0,
-  "peg": 0,
-  "roe": 0,
-  "debtEquity": 0,
-  "grossMargin": 0,
-  "operatingMargin": 0,
-  "revenueGrowthYoY": 0,
-  "revenue": 0,
-  "freeCashFlow": 0,
-  "dividendYield": 0,
-  "analystTarget": 0,
-  "analystBuys": 0,
-  "analystHolds": 0,
-  "analystSells": 0,
-  "description": "descrizione breve del business in italiano max 2 frasi"
-}`
+        `Analista finanziario. Rispondi SOLO con JSON valido, zero testo extra.`,
+        `Dati di ${tickerInfo.ticker} (${tickerInfo.country}, ${tickerInfo.currency}). Restituisci SOLO questo JSON:
+{"name":"","sector":"","currency":"${tickerInfo.currency}","exchange":"${tickerInfo.name}","country":"${tickerInfo.country}","price":0,"priceChange1Y":0,"marketCap":"","pe":0,"forwardPE":0,"evEbitda":0,"peg":0,"roe":0,"debtEquity":0,"grossMargin":0,"operatingMargin":0,"revenueGrowthYoY":0,"revenue":0,"freeCashFlow":0,"dividendYield":0,"analystTarget":0,"analystBuys":0,"analystHolds":0,"analystSells":0,"description":""}`
       );
       const financials = parseJSON(financialsRaw);
       if (!financials) throw new Error("Impossibile recuperare i dati finanziari.");
 
       // Step 2: News
-      setLoadingMsg("Analisi notizie recenti");
-      await sleep(3000);
+      setLoadingMsg("Analisi notizie recenti...");
+      await sleep(10000);
       const newsRaw = await callClaude(
-        `Sei un analista finanziario esperto di mercati globali. Rispondi SOLO con un oggetto JSON valido, nessun testo extra.`,
-        `Cerca le ultime 4 notizie rilevanti su ${financials.name || tickerInfo.base} (${tickerInfo.country}). Cerca in italiano e in inglese. Rispondi SOLO con questo JSON:
-{
-  "news": [
-    {"headline": "titolo in italiano", "date": "gg/mm/aaaa", "sentiment": "positive|negative|neutral"},
-    {"headline": "...", "date": "...", "sentiment": "..."},
-    {"headline": "...", "date": "...", "sentiment": "..."},
-    {"headline": "...", "date": "...", "sentiment": "..."}
-  ]
-}`
+        `Analista finanziario. Rispondi SOLO con JSON valido.`,
+        `Ultime 3 notizie su ${financials.name || tickerInfo.base}. SOLO questo JSON:
+{"news":[{"headline":"","date":"","sentiment":"positive"},{"headline":"","date":"","sentiment":"neutral"},{"headline":"","date":"","sentiment":"negative"}]}`
       );
       const newsData = parseJSON(newsRaw);
 
-      // Step 3: Buffett + Lynch scores + price target
-      setLoadingMsg("Calcolo rating Buffett & Lynch e price target");
-      await sleep(3000);
+      // Step 3: Ratings
+      setLoadingMsg("Calcolo rating Buffett & Lynch...");
+      await sleep(10000);
       const ratingsRaw = await callClaude(
-        `Sei Warren Buffett e Peter Lynch. Rispondi SOLO con JSON valido, nessun testo extra.`,
-        `Analizza ${tickerInfo.ticker} (${financials.name}, ${tickerInfo.country}) con questi dati: PE=${financials.pe}, ROE=${financials.roe}%, DebtEquity=${financials.debtEquity}, GrossMargin=${financials.grossMargin}%, RevenueGrowth=${financials.revenueGrowthYoY}%, PEG=${financials.peg}, OperatingMargin=${financials.operatingMargin}%, FCF=${financials.freeCashFlow}${tickerInfo.currency}, DividendYield=${financials.dividendYield}%.
-
-Rispondi SOLO con questo JSON:
-{
-  "buffettScore": 0,
-  "buffettVerdict": "comprenderebbe o no in 2 frasi in italiano",
-  "buffettPros": ["pro1","pro2","pro3"],
-  "buffettCons": ["contro1","contro2"],
-  "lynchScore": 0,
-  "lynchVerdict": "comprenderebbe o no in 2 frasi in italiano",
-  "lynchCategory": "Slow Grower|Stalwart|Fast Grower|Cyclical|Turnaround|Asset Play",
-  "lynchPros": ["pro1","pro2","pro3"],
-  "lynchCons": ["contro1","contro2"],
-  "dcfBull": 0,
-  "dcfBase": 0,
-  "dcfBear": 0,
-  "dcfRationale": "spiegazione breve in italiano del calcolo",
-  "moatRating": "Forte|Medio|Debole|Assente",
-  "cyclePhase": "Espansione|Rallentamento|Recessione|Ripresa",
-  "rotationSectors": ["settore1","settore2","settore3"]
-}`
+        `Sei Buffett e Lynch. Rispondi SOLO con JSON valido.`,
+        `Analizza ${tickerInfo.ticker}: PE=${financials.pe}, ROE=${financials.roe}%, D/E=${financials.debtEquity}, Margin=${financials.grossMargin}%, Growth=${financials.revenueGrowthYoY}%, PEG=${financials.peg}.
+SOLO questo JSON:
+{"buffettScore":0,"buffettVerdict":"","buffettPros":["","",""],"buffettCons":["",""],"lynchScore":0,"lynchVerdict":"","lynchCategory":"","lynchPros":["","",""],"lynchCons":["",""],"dcfBull":0,"dcfBase":0,"dcfBear":0,"dcfRationale":"","moatRating":"","cyclePhase":"","rotationSectors":["","",""]}`
       );
       const ratings = parseJSON(ratingsRaw);
       if (!ratings) throw new Error("Impossibile calcolare i rating.");
