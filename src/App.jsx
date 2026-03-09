@@ -10,9 +10,8 @@ const callClaude = async (systemPrompt, userPrompt) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: "claude-sonnet-4-20250514",
-      max_tokens: 4000,
-      tools: [{ type: "web_search_20250305", name: "web_search" }],
+      model: "claude-haiku-4-5-20251001",
+      max_tokens: 1000,
       system: systemPrompt,
       messages: [{ role: "user", content: userPrompt }],
     }),
@@ -167,7 +166,7 @@ export default function StockAnalystPro() {
 
       // Step 2: News
       setLoadingMsg("Analisi notizie recenti...");
-      await sleep(10000);
+      await sleep(2000);
       const newsRaw = await callClaude(
         `Analista finanziario. Rispondi SOLO con JSON valido.`,
         `Ultime 3 notizie su ${financials.name || tickerInfo.base}. SOLO questo JSON:
@@ -177,7 +176,7 @@ export default function StockAnalystPro() {
 
       // Step 3: Ratings
       setLoadingMsg("Calcolo rating Buffett & Lynch...");
-      await sleep(10000);
+      await sleep(2000);
       const ratingsRaw = await callClaude(
         `Sei Buffett e Lynch. Rispondi SOLO con JSON valido.`,
         `Analizza ${tickerInfo.ticker}: PE=${financials.pe}, ROE=${financials.roe}%, D/E=${financials.debtEquity}, Margin=${financials.grossMargin}%, Growth=${financials.revenueGrowthYoY}%, PEG=${financials.peg}.
